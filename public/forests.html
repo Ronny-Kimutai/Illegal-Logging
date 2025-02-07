@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>List of Forests</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* Reset styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #d4fc79, #96e6a1);
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #444;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #f9f9f9;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        table th, table td {
+            padding: 14px 18px;
+            text-align: left;
+        }
+
+        table th {
+            background-color: #6a9e7f;
+            color: #ffffff;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        table tr {
+            transition: background-color 0.3s;
+        }
+
+        table tr:hover {
+            background-color: #eafaf1;
+        }
+
+        table td {
+            color: #555;
+        }
+
+        a {
+            color: #1a73e8;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        a:hover {
+            color: #0b56a4;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            table {
+                font-size: 14px;
+            }
+        }
+
+        .icon {
+            display: inline-block;
+            margin-right: 8px;
+        }
+    </style>
+    <script>
+        function switchForest(forest) {
+            fetch(`/select-forest/${forest}`)
+                .then(response => {
+                    if (response.ok) return response.text();
+                    else throw new Error('Failed to switch forest hehe.');
+                })
+                .then(message => {
+                    alert(message);
+                    window.location.href = `${forest}.html?forest=${forest}`;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error switching forest: ' + error.message);
+                });
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>🌳 List of Forests</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Forest Name</th>
+                    <th>Location</th>
+                    <th>Area (ha)</th>
+                    <th>Region</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td><a onclick="switchForest('strathmore')">Strathmore University</a></td>
+                    <td>Nairobi, Kenya</td>
+                    <td>16.2</td>
+                    <td>East Africa</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td><a onclick="switchForest('KEFRI')">Kenya Forestry Research Institute</a></td>
+                    <td>Kikuyu, Kenya</td>
+                    <td>Unknown</td>
+                    <td>East Africa</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

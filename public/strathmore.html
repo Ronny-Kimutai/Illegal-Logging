@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Illegal Logging Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* General Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            height: 100%;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #e0f7e9, #b7e4c7);
+            color: #333;
+            margin: 0;
+        }
+
+        h1 {
+            text-decoration: underline;
+            text-align: center;
+            padding: 20px;
+            color: #2a5d2e;
+            font-size: 2.5rem;
+            text-shadow: 1px 1px 5px #9dcfb5;
+        }
+
+        #map {
+            height: 70%;
+            width: 80%;
+            border-radius: 15px;
+            margin: 20px auto;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .stop-alert-button {
+            display: none;
+            position: absolute;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: #e63946;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(230, 57, 70, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .stop-alert-button:hover {
+            background-color: #d62828;
+            transform: scale(1.1);
+        }
+
+        /* Animation for alert markers */
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.3);
+                opacity: 0.6;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Custom InfoWindow styles */
+        .gm-style-iw {
+            font-size: 14px !important;
+            font-weight: 400 !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌳Strathmore University</h1>
+    <div id="map"></div>
+
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+        // Loading the Google Maps API from .env
+        async function loadGoogleMaps() {
+        try {
+            const response = await fetch('/api/google-maps-key');
+            const data = await response.json();
+
+            if (!data.key) {
+                throw new Error('Google Maps API key not found');
+             }
+
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${data.key}&callback=initMap`;
+            script.async = true;
+            script.defer = true;
+            document.body.appendChild(script);
+        } catch (error) {
+            console.error('Error loading Google Maps:', error);
+        }
+        }
+
+        let map;
+        let markers = {};
+        let alertMarkers = {};
+        let alertIntervals = {};
+        let alertSounds = {};
+        let infoWindows = {};
+        let buttonOffsetY = 60;
+
+        const socket = io();
+        socket.on('locationUpdate', (data) => {
+            const { dev_eui, longitude, latitude, rssi, snr, axe, chainsaw, cowbell, panga, background } = data;
+            updateDeviceLocation(dev_eui, longitude, latitude, rssi, snr, axe, chainsaw, cowbell, panga, background);
+        });
+
+        function initMap() {
+            const initialPosition = { lat: -1.30961, lng: 36.81362 };
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 16,
+                center: initialPosition,
+            });
+
+        // Use a custom icon for the initial marker (e.g., a house icon)
+        const houseIcon = {
+            url: "home.png",  // Replace with the URL to your house icon image
+            scaledSize: new google.maps.Size(20, 20),   // Adjust the size of the icon
+        };
+
+            const initialMarker = new google.maps.Marker({
+                position: initialPosition,
+                map: map,
+                icon: houseIcon,                      
+                title: 'Strathmore University',
+            });
+
+            drawCampusBoundary();
+        }
+
+        function drawCampusBoundary() {
+            // Center point of Strathmore campus
+            const centerPoint = { lat: -1.30961, lng: 36.81362};
+            const campusRadius = 500; // Radius in meters
+
+            // Create the circular boundary
+            const campusCircle = new google.maps.Circle({
+                center: centerPoint,
+                radius: campusRadius,
+                strokeColor: '#7CFC00',
+                strokeOpacity: 0.5,
+                strokeWeight: 2,
+                fillColor: '#7CFC00',
+                fillOpacity: 0.35,
+            });
+
+            campusCircle.setMap(map);
+        }
+
+        function updateDeviceLocation(dev_eui, longitude, latitude, rssi, snr, axe, chainsaw, cowbell, panga, background) {
+            const location = new google.maps.LatLng(latitude, longitude);
+
+            if (markers[dev_eui]) {
+                markers[dev_eui].setPosition(location);
+            } else {
+                markers[dev_eui] = new google.maps.Marker({
+                    position: location,
+                    map: map,
+                    title: `Device EUI: ${dev_eui}`,
+                });
+                createStopAlertButton(dev_eui);
+            }
+
+            const contentString = `
+                <div>
+                    <h3>Device Data</h3>
+                    <p><strong>Device EUI:</strong> ${dev_eui}</p>
+                    <p><strong>RSSI:</strong> ${rssi}</p>
+                    <p><strong>SNR:</strong> ${snr}</p>
+                    <p><strong>Axe:</strong> ${axe}</p>
+                    <p><strong>Chainsaw:</strong> ${chainsaw}</p>
+                    <p><strong>Cowbell:</strong> ${cowbell}</p>
+                    <p><strong>panga:</strong> ${panga}</p>
+                    <p><strong>background:</strong> ${background}</p>
+                </div>
+            `;
+
+            if (infoWindows[dev_eui]) {
+                infoWindows[dev_eui].setContent(contentString);
+            } else {
+                const infoWindow = new google.maps.InfoWindow({ content: contentString });
+                infoWindows[dev_eui] = infoWindow;
+
+                markers[dev_eui].addListener('click', () => {
+                    infoWindow.open(map, markers[dev_eui]);
+                });
+            }
+
+            if (axe > background || chainsaw > background || cowbell > background || panga > background) {
+                startAlert(dev_eui, location);
+            }
+        }
+
+        function startAlert(dev_eui, location) {
+            if (alertMarkers[dev_eui]) return;
+
+            document.getElementById(`stopAlert-${dev_eui}`).style.display = 'block';
+
+            const alertIcon = {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 10,
+                fillColor: "red",
+                fillOpacity: 1,
+                strokeColor: "white",
+                strokeWeight: 2,
+            };
+
+            alertMarkers[dev_eui] = new google.maps.Marker({
+                position: location,
+                map: map,
+                icon: alertIcon,
+                title: "Alert: Unusual activity detected!",
+            });
+
+            let isVisible = true;
+            alertIntervals[dev_eui] = setInterval(() => {
+                alertMarkers[dev_eui].setMap(isVisible ? null : map);
+                isVisible = !isVisible;
+            }, 300);
+            
+            alertSounds[dev_eui] = new Audio('alert_sound.mp3');
+            alertSounds[dev_eui].loop = true;
+            alertSounds[dev_eui].play();
+        }
+
+        function createStopAlertButton(dev_eui) {
+            const button = document.createElement('button');
+            button.className = 'stop-alert-button';
+            button.id = `stopAlert-${dev_eui}`;
+            button.style.top = `${buttonOffsetY}px`;
+            button.textContent = `Stop Alert for ${dev_eui}`;
+            document.body.appendChild(button);
+
+            button.addEventListener('click', () => stopAlert(dev_eui));
+            buttonOffsetY += 50;
+        }
+
+        function stopAlert(dev_eui) {
+            if (alertIntervals[dev_eui]) {
+                clearInterval(alertIntervals[dev_eui]);
+                delete alertIntervals[dev_eui];
+            }
+            if (alertMarkers[dev_eui]) {
+                alertMarkers[dev_eui].setMap(null);
+                delete alertMarkers[dev_eui];
+            }
+            if (alertSounds[dev_eui]) {
+                alertSounds[dev_eui].pause();
+                alertSounds[dev_eui].currentTime = 0;
+                delete alertSounds[dev_eui];
+            }
+
+            document.getElementById(`stopAlert-${dev_eui}`).style.display = 'none';
+        }
+        window.onload = loadGoogleMaps;
+    </script>
+</body>
+</html>
