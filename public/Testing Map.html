@@ -83,7 +83,7 @@
     </style>
 </head>
 <body>
-    <h1>🌳Strathmore University</h1>
+    <h1>🌳Mau Forest</h1>
     <div id="map"></div>
 
     <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
@@ -125,7 +125,7 @@
         });
 
         function initMap() {
-            const initialPosition = { lat: -1.30961, lng: 36.81362 };
+            const initialPosition = { lat: -0.5500, lng: 35.6480 };
             map = new google.maps.Map(document.getElementById('map'), {
                 zoom: 16,
                 center: initialPosition,
@@ -141,14 +141,14 @@
                 position: initialPosition,
                 map: map,
                 icon: houseIcon,                      
-                title: 'Strathmore University',
+                title: 'Mau Forest',
             });
 
             drawMapBoundary();
         }
 
         function drawMapBoundary() {
-            const centerPoint = { lat: -1.30961, lng: 36.81362};
+            const centerPoint = { lat: -0.5500, lng: 35.6480};
             const Radius = 500; // Radius in meters
 
             // Create the circular boundary

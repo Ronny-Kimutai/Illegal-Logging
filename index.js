@@ -46,6 +46,18 @@ const forestConfigurations = {
         password: process.env.KEFRI_PASSWORD,
         topic: process.env.KEFRI_TOPIC
     },
+
+    // Testing Map - Mau Forest
+    Testing: {
+        protocol: process.env.TESTING_PROTOCOL,
+        host: process.env.TESTING_HOST,
+        port: process.env.TESTING_PORT,
+        clientId: process.env.TESTING_CLIENT_ID,
+        username: process.env.TESTING_USERNAME,
+        password: process.env.TESTING_PASSWORD,
+        topic: process.env.TESTING_TOPIC,
+        cert: process.env.CERT
+    },
 };
 
 
@@ -72,6 +84,8 @@ function connectToForest(forest) {
         username: config.username,
         password: config.password,
         reconnectPeriod: 1000,
+        // If the server is using a self-signed certificate, you need to pass the CA.
+        ca: fs.readFileSync(config.cert),
     };
 
     mqttClient = mqtt.connect(connectUrl, options);

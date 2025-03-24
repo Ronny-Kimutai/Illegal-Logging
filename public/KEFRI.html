@@ -144,18 +144,17 @@
                 title: 'Kenya Forestry Research Institute',
             });
 
-            drawCampusBoundary();
+            drawMapBoundary();
         }
 
-        function drawCampusBoundary() {
-            // Center point of Strathmore campus
+        function drawMapBoundary() {
             const centerPoint = { lat: -1.2154607439187637, lng: 36.64574843844314};
-            const campusRadius = 4000; // Radius in meters
+            const Radius = 4000; // Radius in meters
 
             // Create the circular boundary
-            const campusCircle = new google.maps.Circle({
+            const mapCircle = new google.maps.Circle({
                 center: centerPoint,
-                radius: campusRadius,
+                radius: Radius,
                 strokeColor: '#7CFC00',
                 strokeOpacity: 0.5,
                 strokeWeight: 2,
@@ -163,7 +162,7 @@
                 fillOpacity: 0.35,
             });
 
-            campusCircle.setMap(map);
+            mapCircle.setMap(map);
         }
 
         function updateDeviceLocation(dev_eui, longitude, latitude, rssi, snr, axe, chainsaw, cowbell, panga, background) {
