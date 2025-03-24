@@ -92,24 +92,24 @@
     <script>
         // Loading the Google Maps API from .env
         async function loadGoogleMaps() {
-        try {
-            const response = await fetch('/api/google-maps-key');
-            const data = await response.json();
-
-            if (!data.key) {
-                throw new Error('Google Maps API key not found');
-             }
-
-            const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${data.key}&callback=initMap`;
-            script.async = true;
-            script.defer = true;
-            document.body.appendChild(script);
-        } catch (error) {
-            console.error('Error loading Google Maps:', error);
+            try {
+                const response = await fetch('/api/google-maps-key');
+                const data = await response.json();
+    
+                if (!data.key) {
+                    throw new Error('Google Maps API key not found');
+                }
+    
+                const script = document.createElement('script');
+                script.src = `https://maps.googleapis.com/maps/api/js?key=${data.key}&callback=initMap`;
+                script.async = true;
+                script.defer = true;
+                document.body.appendChild(script);
+            } catch (error) {
+                console.error('Error loading Google Maps:', error);
+            }
         }
-        }
-
+    
         let map;
         let markers = {};
         let alertMarkers = {};
@@ -117,41 +117,49 @@
         let alertSounds = {};
         let infoWindows = {};
         let buttonOffsetY = 60;
-
+        
+        let directionsService;
+        let directionsRenderer;
+    
         const socket = io();
         socket.on('locationUpdate', (data) => {
             const { dev_eui, longitude, latitude, rssi, snr, axe, chainsaw, cowbell, panga, background } = data;
             updateDeviceLocation(dev_eui, longitude, latitude, rssi, snr, axe, chainsaw, cowbell, panga, background);
         });
-
+    
         function initMap() {
             const initialPosition = { lat: -0.5500, lng: 35.6480 };
             map = new google.maps.Map(document.getElementById('map'), {
                 zoom: 16,
                 center: initialPosition,
             });
-
-        // Use a custom icon for the initial marker (e.g., a house icon)
-        const houseIcon = {
-            url: "home.png",  // Replace with the URL to your house icon image
-            scaledSize: new google.maps.Size(20, 20),   // Adjust the size of the icon
-        };
-
+    
+            const houseIcon = {
+                url: "home.png",
+                scaledSize: new google.maps.Size(20, 20),
+            };
+    
             const initialMarker = new google.maps.Marker({
                 position: initialPosition,
                 map: map,
-                icon: houseIcon,                      
+                icon: houseIcon,
                 title: 'Mau Forest',
             });
-
+    
             drawMapBoundary();
+    
+            // Initialize route display components
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer({
+                map: map,
+                polylineOptions: { strokeColor: "#0000FF", strokeWeight: 6 }
+            });
         }
-
+    
         function drawMapBoundary() {
-            const centerPoint = { lat: -0.5500, lng: 35.6480};
-            const Radius = 500; // Radius in meters
-
-            // Create the circular boundary
+            const centerPoint = { lat: -0.5500, lng: 35.6480 };
+            const Radius = 500;
+    
             const mapCircle = new google.maps.Circle({
                 center: centerPoint,
                 radius: Radius,
@@ -161,13 +169,13 @@
                 fillColor: '#7CFC00',
                 fillOpacity: 0.35,
             });
-
+    
             mapCircle.setMap(map);
         }
-
+    
         function updateDeviceLocation(dev_eui, longitude, latitude, rssi, snr, axe, chainsaw, cowbell, panga, background) {
             const location = new google.maps.LatLng(latitude, longitude);
-
+    
             if (markers[dev_eui]) {
                 markers[dev_eui].setPosition(location);
             } else {
@@ -178,9 +186,9 @@
                 });
                 createStopAlertButton(dev_eui);
             }
-
-            const contentString = `
-                <div>
+    
+            const contentString = 
+                `<div>
                     <h3>Device Data</h3>
                     <p><strong>Device EUI:</strong> ${dev_eui}</p>
                     <p><strong>RSSI:</strong> ${rssi}</p>
@@ -188,32 +196,32 @@
                     <p><strong>Axe:</strong> ${axe}</p>
                     <p><strong>Chainsaw:</strong> ${chainsaw}</p>
                     <p><strong>Cowbell:</strong> ${cowbell}</p>
-                    <p><strong>panga:</strong> ${panga}</p>
-                    <p><strong>background:</strong> ${background}</p>
-                </div>
-            `;
-
+                    <p><strong>Panga:</strong> ${panga}</p>
+                    <p><strong>Background:</strong> ${background}</p>
+                </div>`;
+    
             if (infoWindows[dev_eui]) {
                 infoWindows[dev_eui].setContent(contentString);
             } else {
                 const infoWindow = new google.maps.InfoWindow({ content: contentString });
                 infoWindows[dev_eui] = infoWindow;
-
+    
                 markers[dev_eui].addListener('click', () => {
                     infoWindow.open(map, markers[dev_eui]);
                 });
             }
-
+    
             if (axe > background || chainsaw > background || cowbell > background || panga > background) {
                 startAlert(dev_eui, location);
+                displayRouteToForest(dev_eui, location);
             }
         }
-
+    
         function startAlert(dev_eui, location) {
             if (alertMarkers[dev_eui]) return;
-
+    
             document.getElementById(`stopAlert-${dev_eui}`).style.display = 'block';
-
+    
             const alertIcon = {
                 path: google.maps.SymbolPath.CIRCLE,
                 scale: 10,
@@ -222,14 +230,14 @@
                 strokeColor: "white",
                 strokeWeight: 2,
             };
-
+    
             alertMarkers[dev_eui] = new google.maps.Marker({
                 position: location,
                 map: map,
                 icon: alertIcon,
                 title: "Alert: Unusual activity detected!",
             });
-
+    
             let isVisible = true;
             alertIntervals[dev_eui] = setInterval(() => {
                 alertMarkers[dev_eui].setMap(isVisible ? null : map);
@@ -240,7 +248,7 @@
             alertSounds[dev_eui].loop = true;
             alertSounds[dev_eui].play();
         }
-
+    
         function createStopAlertButton(dev_eui) {
             const button = document.createElement('button');
             button.className = 'stop-alert-button';
@@ -248,11 +256,11 @@
             button.style.top = `${buttonOffsetY}px`;
             button.textContent = `Stop Alert for ${dev_eui}`;
             document.body.appendChild(button);
-
+    
             button.addEventListener('click', () => stopAlert(dev_eui));
             buttonOffsetY += 50;
         }
-
+    
         function stopAlert(dev_eui) {
             if (alertIntervals[dev_eui]) {
                 clearInterval(alertIntervals[dev_eui]);
@@ -267,10 +275,42 @@
                 alertSounds[dev_eui].currentTime = 0;
                 delete alertSounds[dev_eui];
             }
-
+    
             document.getElementById(`stopAlert-${dev_eui}`).style.display = 'none';
         }
+    
+        function displayRouteToForest(dev_eui, location) {
+            const forestCenter = { lat: -0.5500, lng: 35.6480 }; // Mau Forest Center
+    
+            const request = {
+                origin: location,
+                destination: forestCenter,
+                travelMode: google.maps.TravelMode.DRIVING,
+                provideRouteAlternatives: true
+            };
+    
+            directionsService.route(request, (result, status) => {
+                if (status === "OK") {
+                    directionsRenderer.setDirections(result);
+                    displayRouteInfo(result);
+                } else {
+                    console.error("Error calculating route:", status);
+                }
+            });
+        }
+    
+        function displayRouteInfo(result) {
+            const routeInfoDiv = document.getElementById("route-info");
+            routeInfoDiv.innerHTML = "";
+    
+            result.routes.forEach((route, index) => {
+                const time = route.legs[0].duration.text;
+                const distance = route.legs[0].distance.text;
+                routeInfoDiv.innerHTML += `<p><strong>Route ${index + 1}:</strong> ${distance}, ${time}</p>`;
+            });
+        }
+    
         window.onload = loadGoogleMaps;
-    </script>
+    </script>    
 </body>
 </html>
