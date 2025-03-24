@@ -84,9 +84,12 @@ function connectToForest(forest) {
         username: config.username,
         password: config.password,
         reconnectPeriod: 1000,
-        // If the server is using a self-signed certificate, you need to pass the CA.
-        ca: fs.readFileSync(config.cert),
     };
+
+    // Add CA certificate if needed
+    if (config.cert) {
+    options.ca = fs.readFileSync(config.cert);
+    }
 
     mqttClient = mqtt.connect(connectUrl, options);
 

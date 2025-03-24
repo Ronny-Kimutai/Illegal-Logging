@@ -103,7 +103,7 @@
             fetch(`/select-forest/${forest}`)
                 .then(response => {
                     if (response.ok) return response.text();
-                    else throw new Error('Failed to switch forest hehe.');
+                    else throw new Error('Failed to switch forest.');
                 })
                 .then(message => {
                     alert(message);
@@ -146,7 +146,7 @@
                 </tr>
                 <tr>
                     <td>3</td>
-                    <td><a onclick="switchForest('Testing')">Testing Map</a></td>
+                    <td><a onclick="switchForest('Testing')">Testing - Mau Forest</a></td>
                     <td>Rift Valley, Kenya</td>
                     <td>Unknown</td>
                     <td>East Africa</td>
