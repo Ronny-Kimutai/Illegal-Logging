@@ -89,6 +89,7 @@ function connectToForest(forest) {
     // Add CA certificate if needed
     if (config.cert) {
     options.ca = fs.readFileSync(config.cert);
+    // options.rejectUnauthorized = false; // <---- Allow self-signed certs
     }
 
     mqttClient = mqtt.connect(connectUrl, options);
